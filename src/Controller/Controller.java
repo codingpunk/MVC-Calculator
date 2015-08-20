@@ -1,0 +1,146 @@
+package Controller;
+
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.HashMap;
+
+import javax.swing.JButton;
+import javax.swing.JOptionPane;
+
+import Model.Model;
+import View.View;
+
+public class Controller {
+
+	private Model model;
+	private View view;
+
+	public Controller(Model model, View view) {
+		this.model = model;
+		this.view = view;
+
+		model.addObserver(view);
+
+		view.setCalcButtonListener(new CalcButtonListener());
+
+	}
+
+	class CalcButtonListener implements ActionListener {
+		boolean OperationAlreadyHappened = false;
+
+		public void actionPerformed(ActionEvent e) {
+
+			JButton button = (JButton) e.getSource();
+			String buttonText = button.getText();
+			String computationText = view.getComputationDisplayText();
+			
+			ButtonInfo buttonInfo = null;
+			buttonInfo = makeButtonInfo(buttonText, buttonInfo);
+			
+			StringInfo stringInfo = null; 			
+			stringInfo = makeStringInfo(computationText, stringInfo);
+
+			if (buttonInfo.isClear) {
+				model.Clear();
+				return;
+			}
+
+			if (stringInfo.isEmpty) {
+
+				if (buttonInfo.isNumber) {
+					setComputationText(computationText + buttonText);
+				} else if (buttonInfo.isDot) {
+					setComputationText(computationText + buttonText);
+				} else if (buttonInfo.isOperator) {
+				} // do nothing
+				else if (buttonInfo.isEquals) {
+				} // do nothing
+
+			} else { // string is NOT empty
+
+				if (stringInfo.isLastCharacterNumber) {
+
+					if (buttonInfo.isNumber) {
+						if (OperationAlreadyHappened) {
+							setComputationText(buttonText);
+							OperationAlreadyHappened = false;
+						} else {
+							setComputationText(computationText + buttonText);
+						}
+					} else if (buttonInfo.isOperator) {
+						setComputationText(computationText + buttonText);
+					} else if (buttonInfo.isDot) {
+						setComputationText(computationText + buttonText);
+					} else if (buttonInfo.isEquals) {
+						OperationAlreadyHappened = true;
+						performComputation();
+					}
+				}
+
+				else if (stringInfo.isLastCharacterOperator) {
+
+					if (buttonInfo.isNumber) {
+						setComputationText(computationText + buttonText);
+					} else if (buttonInfo.isOperator) {
+						setComputationText(computationText.substring(0,
+								stringInfo.lastCharIndex) + buttonText);
+					} else if (buttonInfo.isDot) {
+						setComputationText(computationText + buttonText);
+					} else if (buttonInfo.isEquals) {
+					} // do nothing
+
+				}
+
+				else if (stringInfo.isLastCharacterDot) {
+
+					if (buttonInfo.isNumber) {
+						setComputationText(computationText + buttonText);
+					} else if (buttonInfo.isOperator) {
+					} // do nothing
+					else if (buttonInfo.isDot) {
+						setComputationText(computationText.substring(0,
+								stringInfo.lastCharIndex));
+					} else if (buttonInfo.isEquals) {
+					} // do nothing
+
+				}
+
+			}
+
+		}
+
+		private StringInfo makeStringInfo(String computationText,
+				StringInfo stringInfo) {
+			try{
+				stringInfo = new StringInfo(computationText);
+			} catch (Exception exception){
+				view.showExceptionWindow(exception);
+			}
+			return stringInfo;
+		}
+
+		private ButtonInfo makeButtonInfo(String buttonText, ButtonInfo buttonInfo) {
+			try{
+				buttonInfo = new ButtonInfo(buttonText);
+			} catch (Exception exception){
+				view.showExceptionWindow(exception);
+			}
+			return buttonInfo;
+		}
+
+		private void performComputation() {
+		
+			try{
+			model.computeString();
+			} catch (Exception e){
+				new JOptionPane(e.getStackTrace(), JOptionPane.ERROR_MESSAGE);
+			}
+		
+		}
+
+		private void setComputationText(String text) {
+			model.setComputationText(text);
+		}
+
+	}
+}
